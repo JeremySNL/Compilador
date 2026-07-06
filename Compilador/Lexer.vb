@@ -1,6 +1,6 @@
 ﻿Imports System.Text
 
-Public Class AnalizadorLexico
+Public Class Lexer
 
     Public Function Analizar(codigo As String) As List(Of Token)
 

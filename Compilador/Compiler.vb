@@ -1,10 +1,10 @@
 Public Class Compiler
-    Private lexer As AnalizadorLexico
+    Private lexer As Lexer
     Public Property Salida As List(Of String)
     Public Property DebugMode As Boolean
 
     Public Sub New(Optional debugMode As Boolean = True)
-        lexer = New AnalizadorLexico()
+        lexer = New Lexer()
         Salida = New List(Of String)
         Me.DebugMode = debugMode
     End Sub
