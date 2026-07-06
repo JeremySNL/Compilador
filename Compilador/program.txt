@@ -8,3 +8,15 @@ print "Circle with radius: ";
 print radius;
 print "Area: ";
 print area;
+
+print " ";
+int num1;
+int num2;
+num1 = 5;
+num2 = 3;
+print "Resultado:";
+print num1 + num2;
+
+print " ";
+print "Expresion aritmetica compleja:";
+print 5 + 2 * 10 / 2;
