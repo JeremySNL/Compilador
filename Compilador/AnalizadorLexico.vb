@@ -29,10 +29,10 @@ Public Class AnalizadorLexico
 
                 Dim texto As String = palabra.ToString().ToLower()
 
-                If texto = "entero" Or texto = "real" Or texto = "texto" Then
+                If texto = "int" Or texto = "float" Or texto = "string" Then
                     tokens.Add(New Token(TipoToken.TIPO_DATO, texto, inicio))
 
-                ElseIf texto = "imprimir" Then
+                ElseIf texto = "print" Then
                     tokens.Add(New Token(TipoToken.PALABRA_RESERVADA, texto, inicio))
 
                 Else

@@ -1,0 +1,10 @@
+int radius;
+radius = 5;
+float pi;
+pi = 3.14159;
+float area;
+area = pi * radius * radius;
+print "Circle with radius: ";
+print radius;
+print "Area: ";
+print area;

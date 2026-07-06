@@ -1,57 +1,67 @@
 Imports System
+Imports System.IO
 
 Module Program
 
     Sub Main()
+        Console.Clear()
+        Console.WriteLine("================================")
+        Console.WriteLine("COMPILADOR v1.0")
+        Console.WriteLine("================================")
+        Console.WriteLine()
 
-        While True
-            Console.WriteLine("Ingrese una instrucción:")
+        ' Ask for debug mode
+        Console.WriteLine("¿Activar modo debug? (s/n):")
+        Dim debugInput = Console.ReadLine().ToLower()
+        Dim debugMode = (debugInput = "s" Or debugInput = "si" Or debugInput = "yes" Or debugInput = "y")
 
-            Dim codigo As String = Console.ReadLine()
+        Console.WriteLine()
+        Console.WriteLine("Ingrese la ruta del archivo (o presione Enter para 'program.txt'):")
+        Dim filePath = Console.ReadLine()
 
-            Dim lexer As New AnalizadorLexico()
+        If String.IsNullOrWhiteSpace(filePath) Then
+            filePath = "C:\CompiladorLP\Compilador\Compilador\program.txt"
+        End If
 
-            Dim tokens = lexer.Analizar(codigo)
-
+        ' Check if file exists
+        If Not File.Exists(filePath) Then
             Console.WriteLine()
+            Console.WriteLine("✗ Error: Archivo no encontrado: " & filePath)
+            Console.WriteLine("Presione cualquier tecla para salir...")
+            Console.ReadKey()
+            Return
+        End If
 
-            Console.WriteLine("TOKENS ENCONTRADOS:")
-
-            For Each token In tokens
-                Console.WriteLine(token.ToString())
-            Next
-
-            Console.ReadLine()
-
-            Dim parser As New AnalizadorSintactico()
-
-            Try
-
-                parser.Analizar(tokens)
-
-                Console.WriteLine()
-                Console.WriteLine("Análisis sintáctico correcto.")
-
-            Catch ex As Exception
-
-                Console.WriteLine()
-                Console.WriteLine(ex.Message)
-
-            End Try
-
-            Dim semantico As New AnalizadorSemantico()
-
-            Try
-                semantico.Analizar(tokens)
-                Console.WriteLine("Análisis semántico correcto.")
-            Catch ex As Exception
-                Console.WriteLine(ex.Message)
-            End Try
-
+        ' Read file content
+        Dim codigo As String
+        Try
+            codigo = File.ReadAllText(filePath)
+        Catch ex As Exception
             Console.WriteLine()
+            Console.WriteLine("✗ Error al leer el archivo: " & ex.Message)
+            Console.WriteLine("Presione cualquier tecla para salir...")
+            Console.ReadKey()
+            Return
+        End Try
 
-        End While
+        ' Compile and run
+        Console.WriteLine()
+        Console.WriteLine("================================")
+        Console.WriteLine("RESULTADO DE LA COMPILACIÓN")
+        Console.WriteLine("================================")
+        Console.WriteLine()
 
+        Dim compiler As New Compiler(debugMode)
+        Dim exitoso = compiler.Compilar(codigo)
+
+        For Each linea In compiler.Salida
+            Console.WriteLine(linea)
+        Next
+
+        Console.WriteLine()
+        Console.WriteLine("================================")
+        Console.WriteLine("Presione cualquier tecla para salir...")
+        Console.ReadKey()
     End Sub
 
 End Module
