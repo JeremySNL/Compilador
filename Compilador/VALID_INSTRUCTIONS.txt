@@ -1,0 +1,119 @@
+========================================
+VALID INSTRUCTIONS IN THIS COMPILER
+========================================
+
+Currently implemented and working:
+
+1. VARIABLE DECLARATION
+   Syntax: <type> <identifier>;
+
+   Types: int, float, string
+
+   Examples:
+   - int x;
+   - float pi;
+   - string name;
+   - int y = 10;
+   - float result = 3.14;
+   - string greeting = "hello";
+
+
+2. VARIABLE ASSIGNMENT
+   Syntax: <identifier> = <expression>;
+
+   Examples:
+   - x = 5;
+   - y = 10 + 3;
+   - result = x * 2;
+   - name = "John";
+
+
+3. PRINT STATEMENT
+   Syntax: print <expression>;
+
+   Examples:
+   - print x;
+   - print 42;
+   - print x + 5;
+   - print "Hello World";
+   - print name;
+
+
+4. ARITHMETIC OPERATIONS
+   Operators: +, -, *, /
+
+   Precedence:
+   - * and / (higher precedence)
+   - + and - (lower precedence)
+   - Parentheses ( ) override precedence
+
+   Examples:
+   - int result = 2 + 3 * 4;      // result = 14
+   - int sum = (2 + 3) * 4;       // sum = 20
+   - float div = 10 / 3;          // div = 3.333...
+
+
+5. STRING CONCATENATION
+   Operator: + (with strings)
+
+   Examples:
+   - string full = "Hello" + " World";
+   - print "Value: " + x;
+
+
+6. DATA TYPE COERCION
+   - int can be used where float is expected
+   - float can be used where int is expected
+   - String cannot be mixed with numeric operations (except +)
+
+   Examples:
+   - int x = 5;
+   - float y = x;              // Valid: int to float
+   - string s = "test";
+   - print s + 5;              // Error: cannot add string and number
+
+
+========================================
+EXAMPLE VALID PROGRAM
+========================================
+
+int x;
+x = 10;
+int y;
+y = 20;
+int sum;
+sum = x + y;
+print sum;
+print "The sum is: ";
+print sum;
+
+
+========================================
+EXAMPLE VALID PROGRAM 2
+========================================
+
+float pi = 3.14159;
+int radius = 5;
+float area = pi * radius * radius;
+print area;
+
+
+========================================
+NOT YET IMPLEMENTED
+========================================
+
+- if / else statements
+- while loops
+- for loops
+- do-while loops
+- functions / procedures
+- arrays / lists
+- comparison operators (==, !=, <, >, <=, >=)
+- logical operators (&&, ||, !)
+- switch statements
+- comments (// or /* */)
+- multiple statements per line
+- variable increment/decrement (++, --)
+
+
+========================================

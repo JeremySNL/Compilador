@@ -1,0 +1,262 @@
+Public Class Parser
+
+    Private tokens As List(Of Token)
+    Private posicion As Integer
+
+    Public Function Parsear(listaTokens As List(Of Token)) As ProgramNode
+
+        tokens = listaTokens
+        posicion = 0
+
+        Dim programa As New ProgramNode()
+
+        While TokenActual().Tipo <> TipoToken.FIN_ARCHIVO
+
+            If TokenActual().Tipo = TipoToken.FIN_LINEA Then
+                Avanzar()
+            Else
+
+                Dim sentencia = ParsearStatement()
+
+                If sentencia IsNot Nothing Then
+                    programa.Statements.Add(sentencia)
+                End If
+
+            End If
+
+        End While
+
+        Return programa
+
+    End Function
+
+    Private Function ParsearStatement() As Statement
+
+        Select Case TokenActual().Tipo
+
+            Case TipoToken.TIPO_DATO
+                Return ParsearDeclaracion()
+
+            Case TipoToken.IDENTIFICADOR
+                Return ParsearAsignacionOExpresion()
+
+            Case TipoToken.PALABRA_RESERVADA
+
+                If TokenActual().Valor = "print" Then
+                    Return ParsearImprimir()
+                End If
+
+            Case Else
+
+                Lanzar("Instrucción no reconocida: " & TokenActual().Valor)
+
+        End Select
+
+        Return Nothing
+
+    End Function
+
+    Private Function ParsearDeclaracion() As Declaration
+
+        Dim tipoDato = TokenActual().Valor
+        Avanzar()
+
+        If TokenActual().Tipo <> TipoToken.IDENTIFICADOR Then
+            Lanzar("Se esperaba un identificador después del tipo de dato.")
+        End If
+
+        Dim nombre = TokenActual().Valor
+        Avanzar()
+
+        Dim valor As Expression = Nothing
+
+        If TokenActual().Tipo = TipoToken.ASIGNACION Then
+            Avanzar()
+            valor = ParsearExpresion()
+        End If
+
+        Consumir(TipoToken.FIN_LINEA, "Se esperaba ';' al final de la declaración.")
+
+        Return New Declaration(tipoDato, nombre, valor)
+
+    End Function
+
+    Private Function ParsearAsignacionOExpresion() As Statement
+
+        Dim nombre = TokenActual().Valor
+        Avanzar()
+
+        If TokenActual().Tipo = TipoToken.ASIGNACION Then
+
+            Avanzar()
+
+            Dim valor = ParsearExpresion()
+
+            Consumir(TipoToken.FIN_LINEA, "Se esperaba ';' al final de la asignación.")
+
+            Return New Assignment(nombre, valor)
+
+        Else
+
+            Lanzar("Se esperaba '=' después del identificador.")
+
+        End If
+
+        Return Nothing
+
+    End Function
+
+    Private Function ParsearImprimir() As PrintStatement
+
+        Consumir(TipoToken.PALABRA_RESERVADA, "Se esperaba la palabra reservada 'print'.")
+
+        Dim expresion = ParsearExpresion()
+
+        Consumir(TipoToken.FIN_LINEA, "Se esperaba ';' al final de la instrucción print.")
+
+        Return New PrintStatement(expresion)
+
+    End Function
+
+    Private Function ParsearExpresion() As Expression
+
+        Return ParsearSuma()
+
+    End Function
+
+    Private Function ParsearSuma() As Expression
+
+        Dim izquierda = ParsearMultiplicacion()
+
+        While TokenActual().Tipo = TipoToken.OPERADOR_ARITMETICO AndAlso
+          (TokenActual().Valor = "+" OrElse TokenActual().Valor = "-")
+
+            Dim operador = TokenActual().Valor
+
+            Avanzar()
+
+            Dim derecha = ParsearMultiplicacion()
+
+            izquierda = New BinaryOp(izquierda, operador, derecha)
+
+        End While
+
+        Return izquierda
+
+    End Function
+
+    Private Function ParsearMultiplicacion() As Expression
+
+        Dim izquierda = ParsearFactor()
+
+        While TokenActual().Tipo = TipoToken.OPERADOR_ARITMETICO AndAlso
+          (TokenActual().Valor = "*" OrElse TokenActual().Valor = "/")
+
+            Dim operador = TokenActual().Valor
+
+            Avanzar()
+
+            Dim derecha = ParsearFactor()
+
+            izquierda = New BinaryOp(izquierda, operador, derecha)
+
+        End While
+
+        Return izquierda
+
+    End Function
+
+    Private Function ParsearFactor() As Expression
+
+        If TokenActual().Tipo = TipoToken.NUMERO Then
+
+            Dim valor = TokenActual().Valor
+
+            Avanzar()
+
+            If valor.Contains(".") Then
+                Return New NumericLiteral(CDbl(valor))
+            Else
+                Return New NumericLiteral(CDbl(valor))
+            End If
+
+        End If
+
+        If TokenActual().Tipo = TipoToken.CADENA Then
+
+            Dim valor = TokenActual().Valor
+
+            Avanzar()
+
+            Return New StringLiteral(valor)
+
+        End If
+
+        If TokenActual().Tipo = TipoToken.IDENTIFICADOR Then
+
+            Dim nombre = TokenActual().Valor
+
+            Avanzar()
+
+            Return New Identifier(nombre)
+
+        End If
+
+        If TokenActual().Tipo = TipoToken.PARENTESIS_IZQUIERDO Then
+
+            Avanzar()
+
+            Dim expresion = ParsearExpresion()
+
+            Consumir(TipoToken.PARENTESIS_DERECHO, "Se esperaba ')'.")
+
+            Return expresion
+
+        End If
+
+        Lanzar("Se esperaba una expresión.")
+
+        Return Nothing
+
+    End Function
+
+    Private Function TokenActual() As Token
+
+        If posicion >= tokens.Count Then
+            Return New Token(TipoToken.FIN_ARCHIVO, "EOF", 0)
+        End If
+
+        Return tokens(posicion)
+
+    End Function
+
+    Private Sub Avanzar()
+
+        If posicion < tokens.Count - 1 Then
+            posicion += 1
+        End If
+
+    End Sub
+
+    Private Sub Consumir(tipo As TipoToken, mensaje As String)
+
+        If TokenActual().Tipo <> tipo Then
+            Lanzar(mensaje)
+        End If
+
+        Avanzar()
+
+    End Sub
+
+    Private Sub Lanzar(mensaje As String)
+
+        Throw New Exception(
+            "Error sintáctico: " &
+            mensaje &
+            " en la posición " &
+            TokenActual().Posicion
+        )
+
+    End Sub
+
+End Class
