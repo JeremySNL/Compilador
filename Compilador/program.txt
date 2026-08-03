@@ -20,3 +20,52 @@ print num1 + num2;
 print " ";
 print "Expresion aritmetica compleja:";
 print 5 + 2 * 10 / 2;
+
+print " ";
+print "--- Pruebas de if/else y operadores logicos ---";
+
+int x;
+x = 10;
+if (x > 5) {
+    print "x es mayor a 5";
+} else {
+    print "x NO es mayor a 5";
+};
+
+if (x == 10) {
+    print "x es igual a 10";
+};
+
+if (x > 5 && x < 20) {
+    print "x esta entre 5 y 20";
+};
+
+if (x == 1 || x == 10) {
+    print "x es 1 o 10";
+};
+
+if (!(x < 0)) {
+    print "x no es negativo";
+};
+
+int y;
+y = 0;
+if (x > 0 && y == 0) {
+    print "AND funciona";
+};
+if (x < 0 || y == 0) {
+    print "OR funciona";
+};
+
+print " ";
+print "--- Ambito de variables dentro de if ---";
+int z;
+z = 100;
+if (z == 100) {
+    int w;
+    w = 50;
+    print "dentro del if w =";
+    print w;
+};
+print "fuera del if z =";
+print z;

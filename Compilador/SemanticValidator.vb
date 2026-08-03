@@ -126,6 +126,23 @@ Public Class SemanticValidator
                 Return "bool"
             End If
             Throw New Exception("No se puede comparar " & tipoIzq & " con " & tipoDer)
+        ElseIf TypeOf expr Is LogicalExpression Then
+            Dim log = CType(expr, LogicalExpression)
+            ' Negacion unaria
+            If log.Operador = "!" Then
+                Dim tipoOp = ObtenerTipoExpresion(log.Derecha)
+                If tipoOp <> "bool" Then
+                    Throw New Exception("El operador '!' solo se puede aplicar a expresiones booleanas, se obtuvo " & tipoOp)
+                End If
+                Return "bool"
+            End If
+            ' Operadores binarios && y ||
+            Dim tipoIzqLog = ObtenerTipoExpresion(log.Izquierda)
+            Dim tipoDerLog = ObtenerTipoExpresion(log.Derecha)
+            If tipoIzqLog <> "bool" OrElse tipoDerLog <> "bool" Then
+                Throw New Exception("Los operadores '" & log.Operador & "' solo se aplican a expresiones booleanas (se obtuvo " & tipoIzqLog & " y " & tipoDerLog & ")")
+            End If
+            Return "bool"
         End If
         Throw New Exception("Tipo de expresión desconocido")
     End Function
@@ -148,10 +165,11 @@ Public Class SemanticValidator
 
 
     Private Sub ValidarIf(ifStmt As IfStatement)
-        ' Validamos la condición
+        ' Validamos la condición: debe ser de tipo bool
         Dim tipoCond = ObtenerTipoExpresion(ifStmt.Condition)
-        ' No forzamos booleano estricto, permitimos cualquier expresión
-        ' (en tiempo de ejecución se evaluará su veracidad)
+        If tipoCond <> "bool" Then
+            Throw New Exception("La condición del 'if' debe ser booleana, se obtuvo " & tipoCond)
+        End If
 
         ' Entramos a un nuevo ámbito para el cuerpo del if
         symbolTable.PushScope()

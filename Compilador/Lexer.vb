@@ -32,7 +32,7 @@ Public Class Lexer
                 If texto = "int" Or texto = "float" Or texto = "string" Then
                     tokens.Add(New Token(TipoToken.TIPO_DATO, texto, inicio))
 
-                ElseIf texto = "print" Then
+                ElseIf texto = "print" OrElse texto = "if" OrElse texto = "else" Then
                     tokens.Add(New Token(TipoToken.PALABRA_RESERVADA, texto, inicio))
 
                 Else
@@ -94,10 +94,30 @@ Public Class Lexer
                     i += 1
                 End If
 
-                ' CASO: DIFERENTE '!='
+                ' CASO: DIFERENTE '!=' O NEGACION UNARIA '!'
             ElseIf caracter = "!"c Then
                 If i + 1 < codigo.Length AndAlso codigo(i + 1) = "="c Then
                     tokens.Add(New Token(TipoToken.OP_RELACIONAL, "!=", i))
+                    i += 2
+                Else
+                    tokens.Add(New Token(TipoToken.OP_LOGICO, "!", i))
+                    i += 1
+                End If
+
+                ' CASO: AND logico '&&'
+            ElseIf caracter = "&"c Then
+                If i + 1 < codigo.Length AndAlso codigo(i + 1) = "&"c Then
+                    tokens.Add(New Token(TipoToken.OP_LOGICO, "&&", i))
+                    i += 2
+                Else
+                    tokens.Add(New Token(TipoToken.ERROR_404, caracter.ToString(), i))
+                    i += 1
+                End If
+
+                ' CASO: OR logico '||'
+            ElseIf caracter = "|"c Then
+                If i + 1 < codigo.Length AndAlso codigo(i + 1) = "|"c Then
+                    tokens.Add(New Token(TipoToken.OP_LOGICO, "||", i))
                     i += 2
                 Else
                     tokens.Add(New Token(TipoToken.ERROR_404, caracter.ToString(), i))

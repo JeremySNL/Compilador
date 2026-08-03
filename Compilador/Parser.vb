@@ -55,8 +55,8 @@ Public Class Parser
         ' Esperamos '('
         Consumir(TipoToken.PARENTESIS_IZQUIERDO, "Expected '(' after if")
 
-        ' Parseamos la condición (comparación)
-        Dim condition = ParsearComparacion()
+        ' Parseamos la condicion (puede incluir && y ||)
+        Dim condition = ParsearOr()
 
         ' Esperamos ')'
         Consumir(TipoToken.PARENTESIS_DERECHO, "Expected ')' after condition")
@@ -82,7 +82,7 @@ Public Class Parser
 
         ' Mientras no lleguemos a '}'
         While TokenActual().Tipo <> TipoToken.LLAVE_DERECHA AndAlso TokenActual().Tipo <> TipoToken.FIN_ARCHIVO
-            ' Saltamos puntos y coma sueltos (por si hay líneas vacías)
+            ' Saltamos puntos y coma sueltos (por si hay lï¿½neas vacï¿½as)
             If TokenActual().Tipo = TipoToken.FIN_LINEA Then
                 Avanzar()
                 Continue While
@@ -108,7 +108,7 @@ Public Class Parser
         Avanzar()
 
         If TokenActual().Tipo <> TipoToken.IDENTIFICADOR Then
-            Lanzar("Se esperaba un identificador después del tipo de dato.")
+            Lanzar("Se esperaba un identificador despuï¿½s del tipo de dato.")
         End If
 
         Dim nombre = TokenActual().Valor
@@ -121,7 +121,7 @@ Public Class Parser
             valor = ParsearExpresion()
         End If
 
-        Consumir(TipoToken.FIN_LINEA, "Se esperaba ';' al final de la declaración.")
+        Consumir(TipoToken.FIN_LINEA, "Se esperaba ';' al final de la declaraciï¿½n.")
 
         Return New Declaration(tipoDato, nombre, valor)
 
@@ -138,13 +138,13 @@ Public Class Parser
 
             Dim valor = ParsearExpresion()
 
-            Consumir(TipoToken.FIN_LINEA, "Se esperaba ';' al final de la asignación.")
+            Consumir(TipoToken.FIN_LINEA, "Se esperaba ';' al final de la asignaciï¿½n.")
 
             Return New Assignment(nombre, valor)
 
         Else
 
-            Lanzar("Se esperaba '=' después del identificador.")
+            Lanzar("Se esperaba '=' despuï¿½s del identificador.")
 
         End If
 
@@ -158,23 +158,58 @@ Public Class Parser
 
         Dim expresion = ParsearExpresion()
 
-        Consumir(TipoToken.FIN_LINEA, "Se esperaba ';' al final de la instrucción print.")
+        Consumir(TipoToken.FIN_LINEA, "Se esperaba ';' al final de la instrucciï¿½n print.")
 
         Return New PrintStatement(expresion)
 
     End Function
 
     Private Function ParsearExpresion() As Expression
-        Return ParsearComparacion()
+        Return ParsearOr()
     End Function
 
     Private Function ParsearComparacion() As Expression
         Dim izq = ParsearSuma()
-        While TokenActual().Tipo = TipoToken.OP_RELACIONAL
+        ' Solo se permite UNA comparacion encadenada.
+        ' Expresiones como "a < b < c" daran error de sintaxis.
+        If TokenActual().Tipo = TipoToken.OP_RELACIONAL Then
             Dim op = TokenActual().Valor
             Avanzar()
             Dim der = ParsearSuma()
             izq = New ComparisonExpression(izq, op, der)
+        End If
+        Return izq
+    End Function
+
+    Private Function ParsearNot() As Expression
+        If TokenActual().Tipo = TipoToken.OP_LOGICO AndAlso TokenActual().Valor = "!" Then
+            Avanzar()
+            Dim operando = ParsearNot()
+            Return New LogicalExpression("!", Nothing, operando)
+        End If
+        Return ParsearComparacion()
+    End Function
+
+    Private Function ParsearAnd() As Expression
+        Dim opAnd As String = ChrW(38) & ChrW(38)
+        Dim izq = ParsearNot()
+        While TokenActual().Tipo = TipoToken.OP_LOGICO
+            If TokenActual().Valor <> opAnd Then Exit While
+            Avanzar()
+            Dim der = ParsearNot()
+            izq = New LogicalExpression(opAnd, izq, der)
+        End While
+        Return izq
+    End Function
+
+    Private Function ParsearOr() As Expression
+        Dim opOr As String = ChrW(124) & ChrW(124)
+        Dim izq = ParsearAnd()
+        While TokenActual().Tipo = TipoToken.OP_LOGICO
+            If TokenActual().Valor <> opOr Then Exit While
+            Avanzar()
+            Dim der = ParsearAnd()
+            izq = New LogicalExpression(opOr, izq, der)
         End While
         Return izq
     End Function
@@ -269,7 +304,7 @@ Public Class Parser
 
         End If
 
-        Lanzar("Se esperaba una expresión.")
+        Lanzar("Se esperaba una expresiï¿½n.")
 
         Return Nothing
 
@@ -306,9 +341,9 @@ Public Class Parser
     Private Sub Lanzar(mensaje As String)
 
         Throw New Exception(
-            "Error sintáctico: " &
+            "Error sintï¿½ctico: " &
             mensaje &
-            " en la posición " &
+            " en la posiciï¿½n " &
             TokenActual().Posicion
         )
 

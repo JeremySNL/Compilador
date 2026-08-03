@@ -16,8 +16,14 @@ Public Class Interpreter
 
     Private Sub EjecutarIf(ifStmt As IfStatement)
         Dim valorCond = EvaluarExpresion(ifStmt.Condition)
+        Dim condBool As Boolean
+        If TypeOf valorCond Is Boolean Then
+            condBool = CBool(valorCond)
+        Else
+            condBool = EsVerdadero(valorCond)
+        End If
 
-        If EsVerdadero(valorCond) Then
+        If condBool Then
             symbolTable.PushScope()
             For Each stmt In ifStmt.ThenBody
                 EjecutarStatement(stmt)
@@ -52,6 +58,12 @@ Public Class Interpreter
 
 
     Private Sub EjecutarDeclaracion(decl As Declaration)
+        ' Re-declaramos en el ambito actual de ejecucion.
+        ' El validador pop sus scopes tras validar, por lo que el interpreter
+        ' necesita declarar la variable en su propio ambito.
+        If Not symbolTable.VariableExiste(decl.Nombre) Then
+            symbolTable.DeclararVariable(decl.Nombre, decl.TipoDato)
+        End If
         ' Si hay valor inicial, asignarlo
         If decl.Valor IsNot Nothing Then
             Dim valor = EvaluarExpresion(decl.Valor)
@@ -98,6 +110,25 @@ Public Class Interpreter
             Dim numIzq = CDbl(valIzq)
             Dim numDer = CDbl(valDer)
             Return CompararNumeros(numIzq, numDer, comp.Operador)
+        ElseIf TypeOf expr Is LogicalExpression Then
+            Dim log = CType(expr, LogicalExpression)
+            ' Negacion unaria
+            If log.Operador = "!" Then
+                Dim valOp = EvaluarExpresion(log.Derecha)
+                Return Not EsVerdadero(valOp)
+            End If
+            ' Cortocircuito para && y ||
+            Dim valIzqLog = EvaluarExpresion(log.Izquierda)
+            If log.Operador = "&&" Then
+                If Not EsVerdadero(valIzqLog) Then Return False
+                Dim valDerLog = EvaluarExpresion(log.Derecha)
+                Return EsVerdadero(valDerLog)
+            ElseIf log.Operador = "||" Then
+                If EsVerdadero(valIzqLog) Then Return True
+                Dim valDerLog = EvaluarExpresion(log.Derecha)
+                Return EsVerdadero(valDerLog)
+            End If
+            Throw New Exception("Operador lógico desconocido: " & log.Operador)
         End If
         Throw New Exception("Expresión desconocida")
     End Function

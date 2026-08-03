@@ -1,5 +1,7 @@
-﻿' Agregados:
+﻿' Tokens del lenguaje
+' Agregados sobre la version base:
 '   OP_RELACIONAL   -> Para ==, !=, <, >, <=, >=
+'   OP_LOGICO       -> Para &&, ||, !
 '   LLAVE_IZQUIERDA -> {
 '   LLAVE_DERECHA   -> }
 Public Enum TipoToken
@@ -11,6 +13,7 @@ Public Enum TipoToken
     ASIGNACION          ' =
     OPERADOR_ARITMETICO ' +, -, *, /
     OP_RELACIONAL       ' ==, !=, <, >, <=, >=
+    OP_LOGICO           ' &&, ||, !
     PARENTESIS_IZQUIERDO
     PARENTESIS_DERECHO
     LLAVE_IZQUIERDA     ' {
