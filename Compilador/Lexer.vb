@@ -85,8 +85,53 @@ Public Class Lexer
                 End If
 
             ElseIf caracter = "="c Then
+                ' Si el siguiente carácter también es '=', es comparación
+                If i + 1 < codigo.Length AndAlso codigo(i + 1) = "="c Then
+                    tokens.Add(New Token(TipoToken.OP_RELACIONAL, "==", i))
+                    i += 2
+                Else
+                    tokens.Add(New Token(TipoToken.ASIGNACION, "=", i))
+                    i += 1
+                End If
 
-                tokens.Add(New Token(TipoToken.ASIGNACION, "=", i))
+                ' CASO: DIFERENTE '!='
+            ElseIf caracter = "!"c Then
+                If i + 1 < codigo.Length AndAlso codigo(i + 1) = "="c Then
+                    tokens.Add(New Token(TipoToken.OP_RELACIONAL, "!=", i))
+                    i += 2
+                Else
+                    tokens.Add(New Token(TipoToken.ERROR_404, caracter.ToString(), i))
+                    i += 1
+                End If
+
+                ' CASO: MENOR '<' O MENOR O IGUAL '<='
+            ElseIf caracter = "<"c Then
+                If i + 1 < codigo.Length AndAlso codigo(i + 1) = "="c Then
+                    tokens.Add(New Token(TipoToken.OP_RELACIONAL, "<=", i))
+                    i += 2
+                Else
+                    tokens.Add(New Token(TipoToken.OP_RELACIONAL, "<", i))
+                    i += 1
+                End If
+
+                ' CASO: MAYOR '>' O MAYOR O IGUAL '>='
+            ElseIf caracter = ">"c Then
+                If i + 1 < codigo.Length AndAlso codigo(i + 1) = "="c Then
+                    tokens.Add(New Token(TipoToken.OP_RELACIONAL, ">=", i))
+                    i += 2
+                Else
+                    tokens.Add(New Token(TipoToken.OP_RELACIONAL, ">", i))
+                    i += 1
+                End If
+
+                ' CASO: LLAVE QUE ABRE '{'
+            ElseIf caracter = "{"c Then
+                tokens.Add(New Token(TipoToken.LLAVE_IZQUIERDA, "{", i))
+                i += 1
+
+                ' CASO: LLAVE QUE CIERRA '}'
+            ElseIf caracter = "}"c Then
+                tokens.Add(New Token(TipoToken.LLAVE_DERECHA, "}", i))
                 i += 1
 
             ElseIf caracter = "+"c Or caracter = "-"c Or caracter = "*"c Or caracter = "/"c Then

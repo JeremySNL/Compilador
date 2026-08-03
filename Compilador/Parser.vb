@@ -31,30 +31,76 @@ Public Class Parser
     End Function
 
     Private Function ParsearStatement() As Statement
-
         Select Case TokenActual().Tipo
-
             Case TipoToken.TIPO_DATO
                 Return ParsearDeclaracion()
-
             Case TipoToken.IDENTIFICADOR
                 Return ParsearAsignacionOExpresion()
-
             Case TipoToken.PALABRA_RESERVADA
-
                 If TokenActual().Valor = "print" Then
                     Return ParsearImprimir()
+                ElseIf TokenActual().Valor = "if" Then
+                    Return ParsearIf()
                 End If
-
             Case Else
-
-                Lanzar("Instrucción no reconocida: " & TokenActual().Valor)
-
+                Lanzar("Statement not recognized: " & TokenActual().Valor)
         End Select
-
         Return Nothing
-
     End Function
+
+    Private Function ParsearIf() As IfStatement
+        ' Consumimos la palabra 'if' (ya sabemos que estamos en ella, pero avanzamos)
+        Avanzar() ' Consume "if"
+
+        ' Esperamos '('
+        Consumir(TipoToken.PARENTESIS_IZQUIERDO, "Expected '(' after if")
+
+        ' Parseamos la condición (comparación)
+        Dim condition = ParsearComparacion()
+
+        ' Esperamos ')'
+        Consumir(TipoToken.PARENTESIS_DERECHO, "Expected ')' after condition")
+
+        ' Parseamos el bloque del then
+        Dim thenBody = ParsearBloque()
+
+        ' Verificamos si hay 'else'
+        Dim elseBody As List(Of Statement) = Nothing
+        If TokenActual().Tipo = TipoToken.PALABRA_RESERVADA AndAlso TokenActual().Valor = "else" Then
+            Avanzar() ' Consume "else"
+            elseBody = ParsearBloque()
+        End If
+
+        Return New IfStatement(condition, thenBody, elseBody)
+    End Function
+
+    Private Function ParsearBloque() As List(Of Statement)
+        ' Esperamos '{'
+        Consumir(TipoToken.LLAVE_IZQUIERDA, "Expected '{'")
+
+        Dim statements As New List(Of Statement)
+
+        ' Mientras no lleguemos a '}'
+        While TokenActual().Tipo <> TipoToken.LLAVE_DERECHA AndAlso TokenActual().Tipo <> TipoToken.FIN_ARCHIVO
+            ' Saltamos puntos y coma sueltos (por si hay líneas vacías)
+            If TokenActual().Tipo = TipoToken.FIN_LINEA Then
+                Avanzar()
+                Continue While
+            End If
+
+            Dim stmt = ParsearStatement()
+            If stmt IsNot Nothing Then
+                statements.Add(stmt)
+            End If
+        End While
+
+        ' Esperamos '}'
+        Consumir(TipoToken.LLAVE_DERECHA, "Expected '}'")
+
+        Return statements
+    End Function
+
+
 
     Private Function ParsearDeclaracion() As Declaration
 
@@ -119,9 +165,18 @@ Public Class Parser
     End Function
 
     Private Function ParsearExpresion() As Expression
+        Return ParsearComparacion()
+    End Function
 
-        Return ParsearSuma()
-
+    Private Function ParsearComparacion() As Expression
+        Dim izq = ParsearSuma()
+        While TokenActual().Tipo = TipoToken.OP_RELACIONAL
+            Dim op = TokenActual().Valor
+            Avanzar()
+            Dim der = ParsearSuma()
+            izq = New ComparisonExpression(izq, op, der)
+        End While
+        Return izq
     End Function
 
     Private Function ParsearSuma() As Expression
