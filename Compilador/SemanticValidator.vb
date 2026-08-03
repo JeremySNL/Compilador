@@ -5,6 +5,8 @@ Public Class SemanticValidator
         symbolTable = New SymbolTable()
     End Sub
 
+
+
     Public Sub Validar(programa As ProgramNode)
         For Each statement In programa.Statements
             ValidarStatement(statement)
@@ -18,6 +20,8 @@ Public Class SemanticValidator
             ValidarAsignacion(CType(stmt, Assignment))
         ElseIf TypeOf stmt Is PrintStatement Then
             ValidarImprimir(CType(stmt, PrintStatement))
+        ElseIf TypeOf stmt Is IfStatement Then
+            ValidarIf(CType(stmt, IfStatement))
         End If
     End Sub
 
@@ -63,44 +67,6 @@ Public Class SemanticValidator
 
     End Sub
 
-    Private Function ObtenerTipoExpresion(expr As Expression) As String
-
-        If TypeOf expr Is NumericLiteral Then
-
-            Return "int"
-
-        ElseIf TypeOf expr Is StringLiteral Then
-
-            Return "string"
-
-        ElseIf TypeOf expr Is Identifier Then
-
-            Dim ident = CType(expr, Identifier)
-
-            If Not symbolTable.VariableExiste(ident.Nombre) Then
-                Throw New Exception("La variable '" & ident.Nombre & "' no ha sido declarada")
-            End If
-
-            If Not symbolTable.EstaInicializada(ident.Nombre) Then
-                Throw New Exception("La variable '" & ident.Nombre & "' no ha sido inicializada")
-            End If
-
-            Return symbolTable.ObtenerVariable(ident.Nombre).Tipo
-
-        ElseIf TypeOf expr Is BinaryOp Then
-
-            Dim binop = CType(expr, BinaryOp)
-
-            Dim tipoIzq = ObtenerTipoExpresion(binop.Izquierda)
-            Dim tipoDer = ObtenerTipoExpresion(binop.Derecha)
-
-            Return ResolverTipoBinOp(tipoIzq, tipoDer, binop.Operador)
-
-        End If
-
-        Throw New Exception("Tipo de expresión desconocido")
-
-    End Function
 
     Private Function ResolverTipoBinOp(tipoIzq As String, tipoDer As String, op As String) As String
 
@@ -128,6 +94,42 @@ Public Class SemanticValidator
 
     End Function
 
+
+    Private Function ObtenerTipoExpresion(expr As Expression) As String
+        If TypeOf expr Is NumericLiteral Then
+            Return "int"  ' Lo tratamos como int, en runtime puede ser float
+        ElseIf TypeOf expr Is StringLiteral Then
+            Return "string"
+        ElseIf TypeOf expr Is Identifier Then
+            Dim ident = CType(expr, Identifier)
+            If Not symbolTable.VariableExiste(ident.Nombre) Then
+                Throw New Exception("Variable '" & ident.Nombre & "' no ha sido declarada.")
+            End If
+            If Not symbolTable.EstaInicializada(ident.Nombre) Then
+                Throw New Exception("Variable '" & ident.Nombre & "' no ha sido inicializada.")
+            End If
+            Return symbolTable.ObtenerVariable(ident.Nombre).Tipo
+        ElseIf TypeOf expr Is BinaryOp Then
+            Dim binop = CType(expr, BinaryOp)
+            Dim tipoIzq = ObtenerTipoExpresion(binop.Izquierda)
+            Dim tipoDer = ObtenerTipoExpresion(binop.Derecha)
+            Return ResolverTipoBinOp(tipoIzq, tipoDer, binop.Operador)
+        ElseIf TypeOf expr Is ComparisonExpression Then
+            Dim comp = CType(expr, ComparisonExpression)
+            Dim tipoIzq = ObtenerTipoExpresion(comp.Izquierda)
+            Dim tipoDer = ObtenerTipoExpresion(comp.Derecha)
+            ' Permitimos comparar números (int/float) entre sí, y strings con strings
+            If (tipoIzq = "int" OrElse tipoIzq = "float") AndAlso (tipoDer = "int" OrElse tipoDer = "float") Then
+                Return "bool"
+            End If
+            If tipoIzq = "string" AndAlso tipoDer = "string" Then
+                Return "bool"
+            End If
+            Throw New Exception("No se puede comparar " & tipoIzq & " con " & tipoDer)
+        End If
+        Throw New Exception("Tipo de expresión desconocido")
+    End Function
+
     Private Sub ValidarCompatibilidadTipos(tipoEsperado As String, tipoObtenido As String, contexto As String)
 
         ' Entre tipos numéricos se permite combinar int y float
@@ -142,6 +144,30 @@ Public Class SemanticValidator
                                 " pero se obtuvo " & tipoObtenido)
         End If
 
+    End Sub
+
+
+    Private Sub ValidarIf(ifStmt As IfStatement)
+        ' Validamos la condición
+        Dim tipoCond = ObtenerTipoExpresion(ifStmt.Condition)
+        ' No forzamos booleano estricto, permitimos cualquier expresión
+        ' (en tiempo de ejecución se evaluará su veracidad)
+
+        ' Entramos a un nuevo ámbito para el cuerpo del if
+        symbolTable.PushScope()
+        For Each stmt In ifStmt.ThenBody
+            ValidarStatement(stmt)
+        Next
+        symbolTable.PopScope()
+
+        ' Si hay else, otro nuevo ámbito
+        If ifStmt.ElseBody IsNot Nothing Then
+            symbolTable.PushScope()
+            For Each stmt In ifStmt.ElseBody
+                ValidarStatement(stmt)
+            Next
+            symbolTable.PopScope()
+        End If
     End Sub
 
     Public Function ObtenerSymbolTable() As SymbolTable

@@ -13,6 +13,30 @@ Public Class Interpreter
         Next
     End Sub
 
+
+    Private Sub EjecutarIf(ifStmt As IfStatement)
+        Dim valorCond = EvaluarExpresion(ifStmt.Condition)
+
+        If EsVerdadero(valorCond) Then
+            symbolTable.PushScope()
+            For Each stmt In ifStmt.ThenBody
+                EjecutarStatement(stmt)
+            Next
+            symbolTable.PopScope()
+        Else
+            If ifStmt.ElseBody IsNot Nothing Then
+                symbolTable.PushScope()
+                For Each stmt In ifStmt.ElseBody
+                    EjecutarStatement(stmt)
+                Next
+                symbolTable.PopScope()
+            End If
+        End If
+    End Sub
+
+
+
+
     Private Sub EjecutarStatement(stmt As Statement)
         If TypeOf stmt Is Declaration Then
             EjecutarDeclaracion(CType(stmt, Declaration))
@@ -20,8 +44,12 @@ Public Class Interpreter
             EjecutarAsignacion(CType(stmt, Assignment))
         ElseIf TypeOf stmt Is PrintStatement Then
             EjecutarImprimir(CType(stmt, PrintStatement))
+        ElseIf TypeOf stmt Is IfStatement Then
+            EjecutarIf(CType(stmt, IfStatement))
         End If
     End Sub
+
+
 
     Private Sub EjecutarDeclaracion(decl As Declaration)
         ' Si hay valor inicial, asignarlo
@@ -41,6 +69,7 @@ Public Class Interpreter
         Salida.Add("Salida: " & valor.ToString())
     End Sub
 
+    ' =========================================================
     Private Function EvaluarExpresion(expr As Expression) As Object
         If TypeOf expr Is NumericLiteral Then
             Return CType(expr, NumericLiteral).Valor
@@ -55,9 +84,66 @@ Public Class Interpreter
             Dim valIzq = EvaluarExpresion(binop.Izquierda)
             Dim valDer = EvaluarExpresion(binop.Derecha)
             Return AplicarOperador(valIzq, valDer, binop.Operador)
+        ElseIf TypeOf expr Is ComparisonExpression Then
+            Dim comp = CType(expr, ComparisonExpression)
+            Dim valIzq = EvaluarExpresion(comp.Izquierda)
+            Dim valDer = EvaluarExpresion(comp.Derecha)
+
+            ' Comparación de strings
+            If TypeOf valIzq Is String AndAlso TypeOf valDer Is String Then
+                Return CompararStrings(valIzq.ToString(), valDer.ToString(), comp.Operador)
+            End If
+
+            ' Comparación numérica (convertimos ambos a Double)
+            Dim numIzq = CDbl(valIzq)
+            Dim numDer = CDbl(valDer)
+            Return CompararNumeros(numIzq, numDer, comp.Operador)
         End If
         Throw New Exception("Expresión desconocida")
     End Function
+
+    Private Function CompararStrings(izq As String, der As String, op As String) As Boolean
+        Select Case op
+            Case "==" : Return izq = der
+            Case "!=" : Return izq <> der
+            Case "<" : Return izq < der
+            Case ">" : Return izq > der
+            Case "<=" : Return izq <= der
+            Case ">=" : Return izq >= der
+            Case Else : Throw New Exception("Operador de comparación desconocido: " & op)
+        End Select
+    End Function
+
+    Private Function CompararNumeros(izq As Double, der As Double, op As String) As Boolean
+        Select Case op
+            Case "==" : Return izq = der
+            Case "!=" : Return izq <> der
+            Case "<" : Return izq < der
+            Case ">" : Return izq > der
+            Case "<=" : Return izq <= der
+            Case ">=" : Return izq >= der
+            Case Else : Throw New Exception("Operador de comparación desconocido: " & op)
+        End Select
+    End Function
+
+
+    Private Function EsVerdadero(valor As Object) As Boolean
+        If valor Is Nothing Then Return False
+        If TypeOf valor Is String Then
+            Return valor.ToString().Length > 0
+        End If
+        If TypeOf valor Is Double Then
+            Return CDbl(valor) <> 0.0
+        End If
+        If TypeOf valor Is Integer Then
+            Return CInt(valor) <> 0
+        End If
+        If TypeOf valor Is Boolean Then
+            Return CBool(valor)
+        End If
+        Return True
+    End Function
+
 
     Private Function AplicarOperador(izq As Object, der As Object, op As String) As Object
         ' Concatenación de strings
